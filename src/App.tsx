@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import {
   Plus, Search, Filter, ArrowUpDown, LayoutGrid, List,
-  FolderOpen, CheckSquare, ChevronRight, X, Menu
+  FolderOpen, CheckSquare, ChevronRight, X, Menu, LogOut
 } from 'lucide-react';
-import { useTaskManager } from '@/hooks/useTaskManager';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSupabaseTaskManager } from '@/hooks/useSupabaseTaskManager';
+import { AuthPage } from '@/components/AuthPage';
 
 import { TaskCard } from '@/components/TaskCard';
 import { TaskTable } from '@/components/TaskTable';
@@ -29,6 +31,7 @@ import type { Task, Project, Status, Priority, SortOption } from '@/types';
 import { cn } from '@/lib/utils';
 
 export default function App() {
+  const { user, loading: authLoading, signOut } = useAuth();
   const {
     projects,
     selectedProjectId,
@@ -46,7 +49,7 @@ export default function App() {
     addTask,
     updateTask,
     deleteTask
-  } = useTaskManager();
+  } = useSupabaseTaskManager();
 
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -109,6 +112,24 @@ export default function App() {
 
   const hasActiveFilters = filters.status !== 'todos' || filters.priority !== 'todas' || filters.search;
 
+  // Mostrar página de login se não estiver autenticado
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-full bg-[#3881ec] flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <CheckSquare className="w-8 h-8 text-white" />
+          </div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthPage />;
+  }
+
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       {/* Header */}
@@ -139,7 +160,22 @@ export default function App() {
               <span className="hidden sm:inline">Nova Tarefa</span>
               <span className="sm:hidden">Tarefa</span>
             </Button>
-          </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <div className="w-8 h-8 rounded-full bg-[#3881ec] flex items-center justify-center text-white text-sm font-medium">
+                    {user.email?.[0].toUpperCase()}
+                  </div>
+                  <span className="hidden md:inline text-sm">{user.email}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={signOut} className="text-red-600">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>          </div>
         </div>
       </header>
 

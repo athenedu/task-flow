@@ -24,7 +24,7 @@ Este plano detalha os passos para integrar seu gerenciador de tarefas com Supaba
 Acesse o **SQL Editor** no painel do Supabase e execute o seguinte script:
 
 ```sql
--- Criar tabela de projetos
+-- Criar tabela de projetos (compartilhada entre todos os usuários)
 CREATE TABLE projects (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE projects (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Criar tabela de tarefas
+-- Criar tabela de tarefas (compartilhada entre todos os usuários)
 CREATE TABLE tasks (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   title TEXT NOT NULL,
@@ -55,40 +55,31 @@ CREATE INDEX idx_tasks_due_date ON tasks(due_date);
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
--- Criar políticas públicas (para simplificar - ideal seria ter autenticação)
-CREATE POLICY "Permitir leitura pública de projetos" ON projects
-  FOR SELECT USING (true);
+-- Políticas RLS para projetos (qualquer usuário autenticado pode acessar tudo)
+CREATE POLICY "Usuários autenticados podem ver projetos" ON projects
+  FOR SELECT USING (auth.uid() IS NOT NULL);
 
-CREATE POLICY "Permitir inserção pública de projetos" ON projects
-  FOR INSERT WITH CHECK (true);
+CREATE POLICY "Usuários autenticados podem criar projetos" ON projects
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
-CREATE POLICY "Permitir atualização pública de projetos" ON projects
-  FOR UPDATE USING (true);
+CREATE POLICY "Usuários autenticados podem atualizar projetos" ON projects
+  FOR UPDATE USING (auth.uid() IS NOT NULL);
 
-CREATE POLICY "Permitir exclusão pública de projetos" ON projects
-  FOR DELETE USING (true);
+CREATE POLICY "Usuários autenticados podem excluir projetos" ON projects
+  FOR DELETE USING (auth.uid() IS NOT NULL);
 
-CREATE POLICY "Permitir leitura pública de tarefas" ON tasks
-  FOR SELECT USING (true);
+-- Políticas RLS para tarefas (qualquer usuário autenticado pode acessar tudo)
+CREATE POLICY "Usuários autenticados podem ver tarefas" ON tasks
+  FOR SELECT USING (auth.uid() IS NOT NULL);
 
-CREATE POLICY "Permitir inserção pública de tarefas" ON tasks
-  FOR INSERT WITH CHECK (true);
+CREATE POLICY "Usuários autenticados podem criar tarefas" ON tasks
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
-CREATE POLICY "Permitir atualização pública de tarefas" ON tasks
-  FOR UPDATE USING (true);
+CREATE POLICY "Usuários autenticados podem atualizar tarefas" ON tasks
+  FOR UPDATE USING (auth.uid() IS NOT NULL);
 
-CREATE POLICY "Permitir exclusão pública de tarefas" ON tasks
-  FOR DELETE USING (true);
-
--- Inserir dados de exemplo
-INSERT INTO projects (id, name, description, color) VALUES
-  ('11111111-1111-1111-1111-111111111111', 'Website Redesign', 'Redesign completo do site corporativo', '#3881ec'),
-  ('22222222-2222-2222-2222-222222222222', 'Mobile App', 'Desenvolvimento do aplicativo mobile', '#10b981');
-
-INSERT INTO tasks (title, description, priority, due_date, status, project_id) VALUES
-  ('Definir paleta de cores', 'Escolher cores principais e secundárias para o novo design', 'alta', '2025-02-25', 'concluída', '11111111-1111-1111-1111-111111111111'),
-  ('Criar wireframes', 'Desenvolver wireframes das páginas principais', 'urgente', '2025-02-28', 'iniciada', '11111111-1111-1111-1111-111111111111'),
-  ('Configurar ambiente', 'Configurar ambiente de desenvolvimento mobile', 'média', '2025-03-05', 'na fila', '22222222-2222-2222-2222-222222222222');
+CREATE POLICY "Usuários autenticados podem excluir tarefas" ON tasks
+  FOR DELETE USING (auth.uid() IS NOT NULL);
 ```
 
 ### 1.3 Obter as Credenciais do Supabase

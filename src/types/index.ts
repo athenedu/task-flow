@@ -1,6 +1,13 @@
 export type Priority = 'urgente' | 'alta' | 'média' | 'baixa';
 export type Status = 'na fila' | 'em preparação' | 'iniciada' | 'em revisão' | 'concluída';
 
+export interface AppUser {
+  id: string;
+  email: string;
+  name?: string;
+  avatar_url?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -10,6 +17,8 @@ export interface Task {
   status: Status;
   projectId: string;
   createdAt: string;
+  createdBy: string;
+  assignedTo: string | null;
 }
 
 export interface Project {

@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Project, Task, Priority, Status, Filters, SortOption } from '@/types';
+import type { Project, Task, Priority, Status, Filters, SortOption, AppUser } from '@/types';
 
 const priorityOrder: Record<Priority, number> = {
   'urgente': 0,
@@ -22,6 +22,7 @@ export function useSupabaseTaskManager() {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>({
@@ -56,6 +57,80 @@ export function useSupabaseTaskManager() {
     }
   }, [user]);
 
+  // Carregar usuários
+  const loadUsers = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      // Tentar usar uma função RPC customizada se existir
+      const { data: rpcData, error: rpcError } = await supabase
+        .rpc('get_all_users');
+
+      if (rpcData && !rpcError) {
+        setUsers(rpcData.map((u: any) => ({
+          id: u.id,
+          email: u.email || '',
+          name: u.name || u.email?.split('@')[0],
+          avatar_url: u.avatar_url
+        })));
+        return;
+      }
+    } catch (err) {
+      // RPC não existe, usar método alternativo
+    }
+
+    // Fallback: buscar usuários únicos das tarefas existentes + usuário atual
+    const { data: tasksData } = await supabase
+      .from('tasks')
+      .select('created_by, assigned_to');
+
+    const uniqueUserIds = new Set<string>();
+    uniqueUserIds.add(user.id);
+
+    if (tasksData) {
+      tasksData.forEach((task: any) => {
+        if (task.created_by) uniqueUserIds.add(task.created_by);
+        if (task.assigned_to) uniqueUserIds.add(task.assigned_to);
+      });
+    }
+
+    // Buscar perfis dos usuários
+    const { data: profilesData } = await supabase
+      .from('user_profiles')
+      .select('id, display_name, avatar_url')
+      .in('id', Array.from(uniqueUserIds));
+
+    const profilesMap = new Map(
+      (profilesData || []).map((p: any) => [p.id, p])
+    );
+
+    // Buscar informações dos usuários
+    const usersList: AppUser[] = [];
+
+    for (const userId of uniqueUserIds) {
+      const profile = profilesMap.get(userId);
+
+      if (userId === user.id) {
+        usersList.push({
+          id: user.id,
+          email: user.email || '',
+          name: profile?.display_name || user.user_metadata?.name || user.email?.split('@')[0],
+          avatar_url: profile?.avatar_url
+        });
+      } else {
+        // Para outros usuários, buscar do perfil ou usar fallback
+        usersList.push({
+          id: userId,
+          email: `user_${userId.substring(0, 8)}@taskflow.app`,
+          name: profile?.display_name || `Usuário ${userId.substring(0, 8)}`,
+          avatar_url: profile?.avatar_url
+        });
+      }
+    }
+
+    setUsers(usersList);
+  }, [user]);
+
   // Carregar tarefas
   const loadTasks = useCallback(async () => {
     if (!user) return;
@@ -79,7 +154,9 @@ export function useSupabaseTaskManager() {
         dueDate: t.due_date,
         status: t.status,
         projectId: t.project_id,
-        createdAt: t.created_at
+        createdAt: t.created_at,
+        createdBy: t.created_by,
+        assignedTo: t.assigned_to
       })));
     }
   }, [user]);
@@ -88,9 +165,9 @@ export function useSupabaseTaskManager() {
   useEffect(() => {
     if (user) {
       setLoading(true);
-      Promise.all([loadProjects(), loadTasks()]).finally(() => setLoading(false));
+      Promise.all([loadProjects(), loadTasks(), loadUsers()]).finally(() => setLoading(false));
     }
-  }, [user, loadProjects, loadTasks]);
+  }, [user, loadProjects, loadTasks, loadUsers]);
 
   // Project operations
   const addProject = useCallback(async (name: string, description: string, color: string) => {
@@ -183,7 +260,9 @@ export function useSupabaseTaskManager() {
         priority: task.priority,
         due_date: task.dueDate,
         status: task.status,
-        project_id: task.projectId
+        project_id: task.projectId,
+        created_by: task.createdBy,
+        assigned_to: task.assignedTo
       } as any)
       .select()
       .single();
@@ -203,7 +282,9 @@ export function useSupabaseTaskManager() {
         dueDate: taskData.due_date,
         status: taskData.status,
         projectId: taskData.project_id,
-        createdAt: taskData.created_at
+        createdAt: taskData.created_at,
+        createdBy: taskData.created_by,
+        assignedTo: taskData.assigned_to
       };
 
       setTasks((prev: Task[]) => [newTask, ...prev]);
@@ -220,7 +301,8 @@ export function useSupabaseTaskManager() {
       priority: updates.priority,
       due_date: updates.dueDate,
       status: updates.status,
-      project_id: updates.projectId
+      project_id: updates.projectId,
+      assigned_to: updates.assignedTo
     };
 
     const { error: updateError } = await (supabase
@@ -330,6 +412,7 @@ export function useSupabaseTaskManager() {
   return {
     projects,
     tasks,
+    users,
     selectedProjectId,
     selectedProject,
     filters,

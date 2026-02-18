@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import {
   Plus, Search, Filter, ArrowUpDown, LayoutGrid, List,
-  FolderOpen, CheckSquare, ChevronRight, X, Menu, LogOut, ChevronDown, ChevronUp, Key
+  FolderOpen, CheckSquare, ChevronRight, X, Menu, LogOut, ChevronDown, ChevronUp, Key, UserCircle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseTaskManager } from '@/hooks/useSupabaseTaskManager';
 import { AuthPage } from '@/components/AuthPage';
 import { ChangePasswordModal } from '@/components/ChangePasswordModal';
+import { UserProfileModal } from '@/components/UserProfileModal';
 
 import { TaskCard } from '@/components/TaskCard';
 import { TaskTable } from '@/components/TaskTable';
@@ -36,6 +37,7 @@ export default function App() {
   const { user, loading: authLoading, signOut } = useAuth();
   const {
     projects,
+    users,
     selectedProjectId,
     selectedProject,
     filters,
@@ -61,6 +63,7 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showCompleted, setShowCompleted] = useState(true);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
 
   const handleAddProject = () => {
     setEditingProject(null);
@@ -178,6 +181,10 @@ export default function App() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setIsUserProfileModalOpen(true)}>
+                  <UserCircle className="w-4 h-4 mr-2" />
+                  Editar Perfil
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setIsChangePasswordModalOpen(true)}>
                   <Key className="w-4 h-4 mr-2" />
                   Alterar Senha
@@ -450,6 +457,7 @@ export default function App() {
                   {viewMode === 'list' ? (
                     <TaskTable
                       tasks={activeTasks}
+                      users={users}
                       onEdit={handleEditTask}
                       onDelete={handleDeleteTask}
                     />
@@ -459,6 +467,7 @@ export default function App() {
                         <TaskCard
                           key={task.id}
                           task={task}
+                          users={users}
                           onEdit={() => handleEditTask(task)}
                           onDelete={() => handleDeleteTask(task.id)}
                         />
@@ -492,6 +501,7 @@ export default function App() {
                     viewMode === 'list' ? (
                       <TaskTable
                         tasks={completedTasks}
+                        users={users}
                         onEdit={handleEditTask}
                         onDelete={handleDeleteTask}
                       />
@@ -501,6 +511,7 @@ export default function App() {
                           <TaskCard
                             key={task.id}
                             task={task}
+                            users={users}
                             onEdit={() => handleEditTask(task)}
                             onDelete={() => handleDeleteTask(task.id)}
                           />
@@ -529,12 +540,19 @@ export default function App() {
         onSubmit={handleTaskSubmit}
         task={editingTask}
         projects={projects}
+        users={users}
         defaultProjectId={selectedProjectId}
       />
 
       <ChangePasswordModal
         isOpen={isChangePasswordModalOpen}
         onClose={() => setIsChangePasswordModalOpen(false)}
+      />
+
+      <UserProfileModal
+        isOpen={isUserProfileModalOpen}
+        onClose={() => setIsUserProfileModalOpen(false)}
+        onProfileUpdated={() => window.location.reload()}
       />
     </div>
   );

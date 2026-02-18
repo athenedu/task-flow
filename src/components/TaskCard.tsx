@@ -1,8 +1,9 @@
-import type { Task } from '@/types';
+import type { Task, AppUser } from '@/types';
 import { cn, formatDateShort, isDateOverdue } from '@/lib/utils';
-import { Calendar, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Calendar, MoreVertical, Edit, Trash2, UserCircle } from 'lucide-react';
 import { PriorityBadge } from './PriorityBadge';
 import { StatusBadge } from './StatusBadge';
+import { UserAvatar } from './UserAvatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,12 +13,15 @@ import {
 
 interface TaskCardProps {
   task: Task;
+  users: AppUser[];
   onEdit: () => void;
   onDelete: () => void;
 }
 
-export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
+export function TaskCard({ task, users, onEdit, onDelete }: TaskCardProps) {
   const isOverdue = isDateOverdue(task.dueDate) && task.status !== 'concluída';
+  const assignedUser = users.find(u => u.id === task.assignedTo);
+  const createdByUser = users.find(u => u.id === task.createdBy);
 
   return (
     <div className="group bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg hover:border-[#3881ec]/30 transition-all duration-300">
@@ -36,18 +40,56 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
             <p className="text-sm text-gray-500 line-clamp-2 mb-3">{task.description}</p>
           )}
 
-          <div className="flex items-center gap-2">
-            <Calendar className={cn(
-              'w-3.5 h-3.5',
-              isOverdue ? 'text-red-500' : 'text-gray-400'
-            )} />
-            <span className={cn(
-              'text-xs',
-              isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'
-            )}>
-              {formatDateShort(task.dueDate)}
-              {isOverdue && ' (atrasada)'}
-            </span>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <Calendar className={cn(
+                'w-3.5 h-3.5',
+                isOverdue ? 'text-red-500' : 'text-gray-400'
+              )} />
+              <span className={cn(
+                'text-xs',
+                isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'
+              )}>
+                {formatDateShort(task.dueDate)}
+                {isOverdue && ' (atrasada)'}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              {assignedUser && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-gray-400">Responsável:</span>
+                  <UserAvatar
+                    name={assignedUser.name}
+                    email={assignedUser.email}
+                    avatarUrl={assignedUser.avatar_url}
+                    size="xs"
+                    showName={false}
+                    className="inline-flex"
+                  />
+                  <span className="text-xs text-gray-600 truncate max-w-[100px]">
+                    {assignedUser.name || assignedUser.email}
+                  </span>
+                </div>
+              )}
+
+              {createdByUser && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-gray-400">Criado por:</span>
+                  <UserAvatar
+                    name={createdByUser.name}
+                    email={createdByUser.email}
+                    avatarUrl={createdByUser.avatar_url}
+                    size="xs"
+                    showName={false}
+                    className="inline-flex"
+                  />
+                  <span className="text-xs text-gray-600 truncate max-w-[100px]">
+                    {createdByUser.name || createdByUser.email}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

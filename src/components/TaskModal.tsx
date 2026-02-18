@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import type { Task, Priority, Status, Project } from '@/types';
+import type { Task, Priority, Status, Project, AppUser } from '@/types';
 import { formatDateForInput } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -25,19 +26,22 @@ interface TaskModalProps {
   onSubmit: (task: Omit<Task, 'id' | 'createdAt'>) => void;
   task?: Task | null;
   projects: Project[];
+  users: AppUser[];
   defaultProjectId?: string | null;
 }
 
 const priorities: Priority[] = ['urgente', 'alta', 'média', 'baixa'];
 const statuses: Status[] = ['na fila', 'em preparação', 'iniciada', 'em revisão', 'concluída'];
 
-export function TaskModal({ isOpen, onClose, onSubmit, task, projects, defaultProjectId }: TaskModalProps) {
+export function TaskModal({ isOpen, onClose, onSubmit, task, projects, users, defaultProjectId }: TaskModalProps) {
+  const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>('média');
   const [status, setStatus] = useState<Status>('na fila');
   const [dueDate, setDueDate] = useState('');
   const [projectId, setProjectId] = useState('');
+  const [assignedTo, setAssignedTo] = useState<string>('unassigned');
   const [errors, setErrors] = useState<{ title?: string; projectId?: string }>({});
 
   useEffect(() => {
@@ -48,6 +52,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, defaultPr
       setStatus(task.status);
       setDueDate(formatDateForInput(task.dueDate));
       setProjectId(task.projectId);
+      setAssignedTo(task.assignedTo || 'unassigned');
     } else {
       setTitle('');
       setDescription('');
@@ -55,6 +60,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, defaultPr
       setStatus('na fila');
       setDueDate(formatDateForInput());
       setProjectId(defaultProjectId || projects[0]?.id || '');
+      setAssignedTo('unassigned');
     }
     setErrors({});
   }, [task, isOpen, defaultProjectId, projects]);
@@ -83,7 +89,9 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, defaultPr
       priority,
       status,
       dueDate,
-      projectId
+      projectId,
+      createdBy: task?.createdBy || user?.id || '',
+      assignedTo: assignedTo === 'unassigned' ? null : assignedTo
     });
 
     onClose();
@@ -188,6 +196,23 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, defaultPr
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="assignedTo">Responsável</Label>
+            <Select value={assignedTo} onValueChange={setAssignedTo}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um responsável (opcional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Sem responsável</SelectItem>
+                {users.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.name || u.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

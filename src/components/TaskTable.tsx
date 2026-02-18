@@ -1,8 +1,9 @@
-import type { Task } from '@/types';
+import type { Task, AppUser } from '@/types';
 import { cn, formatDateLong, isDateOverdue } from '@/lib/utils';
 import { Calendar, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { PriorityBadge } from './PriorityBadge';
 import { StatusBadge } from './StatusBadge';
+import { UserAvatar } from './UserAvatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,13 +21,19 @@ import {
 
 interface TaskTableProps {
   tasks: Task[];
+  users: AppUser[];
   onEdit: (task: Task) => void;
   onDelete: (taskId: string) => void;
 }
 
-export function TaskTable({ tasks, onEdit, onDelete }: TaskTableProps) {
+export function TaskTable({ tasks, users, onEdit, onDelete }: TaskTableProps) {
   const checkOverdue = (dueDate: string, status: string) => {
     return isDateOverdue(dueDate) && status !== 'concluída';
+  };
+
+  const getUser = (userId: string | null) => {
+    if (!userId) return null;
+    return users.find(u => u.id === userId);
   };
 
   return (
@@ -37,6 +44,8 @@ export function TaskTable({ tasks, onEdit, onDelete }: TaskTableProps) {
             <TableHead className="font-semibold">Título</TableHead>
             <TableHead className="font-semibold">Descrição</TableHead>
             <TableHead className="font-semibold">Prioridade</TableHead>
+            <TableHead className="font-semibold">Responsável</TableHead>
+            <TableHead className="font-semibold">Criado por</TableHead>
             <TableHead className="font-semibold">Previsão</TableHead>
             <TableHead className="font-semibold">Status</TableHead>
             <TableHead className="w-[50px]"></TableHead>
@@ -63,6 +72,30 @@ export function TaskTable({ tasks, onEdit, onDelete }: TaskTableProps) {
               </TableCell>
               <TableCell>
                 <PriorityBadge priority={task.priority} />
+              </TableCell>
+              <TableCell>
+                {getUser(task.assignedTo) ? (
+                  <UserAvatar
+                    name={getUser(task.assignedTo)?.name}
+                    email={getUser(task.assignedTo)?.email}
+                    avatarUrl={getUser(task.assignedTo)?.avatar_url}
+                    size="sm"
+                  />
+                ) : (
+                  <span className="text-sm text-gray-400 italic">Sem responsável</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {getUser(task.createdBy) ? (
+                  <UserAvatar
+                    name={getUser(task.createdBy)?.name}
+                    email={getUser(task.createdBy)?.email}
+                    avatarUrl={getUser(task.createdBy)?.avatar_url}
+                    size="sm"
+                  />
+                ) : (
+                  <span className="text-sm text-gray-400 italic">Desconhecido</span>
+                )}
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">

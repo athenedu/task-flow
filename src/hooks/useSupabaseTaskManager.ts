@@ -204,7 +204,7 @@ export function useSupabaseTaskManager() {
         createdAt: taskData.created_at
       };
 
-      setTasks(prev => [newTask, ...prev]);
+      setTasks((prev: Task[]) => [newTask, ...prev]);
       return taskData.id;
     }
   }, [user]);
@@ -229,7 +229,7 @@ export function useSupabaseTaskManager() {
       return;
     }
 
-    setTasks(prev => prev.map(t =>
+    setTasks((prev: Task[]) => prev.map((t: Task) =>
       t.id === id ? { ...t, ...updates } : t
     ));
   }, [user]);

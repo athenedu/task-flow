@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import {
   Plus, Search, Filter, ArrowUpDown, LayoutGrid, List,
-  FolderOpen, CheckSquare, ChevronRight, X, Menu, LogOut
+  FolderOpen, CheckSquare, ChevronRight, X, Menu, LogOut, ChevronDown, ChevronUp, Key
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseTaskManager } from '@/hooks/useSupabaseTaskManager';
 import { AuthPage } from '@/components/AuthPage';
+import { ChangePasswordModal } from '@/components/ChangePasswordModal';
 
 import { TaskCard } from '@/components/TaskCard';
 import { TaskTable } from '@/components/TaskTable';
@@ -26,6 +27,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import type { Task, Project, Status, Priority, SortOption } from '@/types';
 import { cn } from '@/lib/utils';
@@ -57,6 +59,8 @@ export default function App() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [showCompleted, setShowCompleted] = useState(true);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
 
   const handleAddProject = () => {
     setEditingProject(null);
@@ -111,6 +115,10 @@ export default function App() {
   };
 
   const hasActiveFilters = filters.status !== 'todos' || filters.priority !== 'todas' || filters.search;
+
+  // Separar tarefas concluídas das não concluídas
+  const activeTasks = filteredTasks.filter((task: Task) => task.status !== 'concluída');
+  const completedTasks = filteredTasks.filter((task: Task) => task.status === 'concluída');
 
   // Mostrar página de login se não estiver autenticado
   if (authLoading) {
@@ -170,6 +178,11 @@ export default function App() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setIsChangePasswordModalOpen(true)}>
+                  <Key className="w-4 h-4 mr-2" />
+                  Alterar Senha
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOut} className="text-red-600">
                   <LogOut className="w-4 h-4 mr-2" />
                   Sair
@@ -420,22 +433,83 @@ export default function App() {
                 Nova Tarefa
               </Button>
             </div>
-          ) : viewMode === 'list' ? (
-            <TaskTable
-              tasks={filteredTasks}
-              onEdit={handleEditTask}
-              onDelete={handleDeleteTask}
-            />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filteredTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onEdit={() => handleEditTask(task)}
-                  onDelete={() => handleDeleteTask(task.id)}
-                />
-              ))}
+            <div className="space-y-6">
+              {/* Tarefas Ativas (Não Concluídas) */}
+              {activeTasks.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Tarefas Ativas
+                      <span className="ml-2 text-sm font-normal text-gray-500">
+                        ({activeTasks.length})
+                      </span>
+                    </h2>
+                  </div>
+
+                  {viewMode === 'list' ? (
+                    <TaskTable
+                      tasks={activeTasks}
+                      onEdit={handleEditTask}
+                      onDelete={handleDeleteTask}
+                    />
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {activeTasks.map((task) => (
+                        <TaskCard
+                          key={task.id}
+                          task={task}
+                          onEdit={() => handleEditTask(task)}
+                          onDelete={() => handleDeleteTask(task.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Tarefas Concluídas */}
+              {completedTasks.length > 0 && (
+                <div>
+                  <button
+                    onClick={() => setShowCompleted(!showCompleted)}
+                    className="flex items-center justify-between w-full mb-4 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Tarefas Concluídas
+                      <span className="ml-2 text-sm font-normal text-gray-500">
+                        ({completedTasks.length})
+                      </span>
+                    </h2>
+                    {showCompleted ? (
+                      <ChevronUp className="w-5 h-5 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-500" />
+                    )}
+                  </button>
+
+                  {showCompleted && (
+                    viewMode === 'list' ? (
+                      <TaskTable
+                        tasks={completedTasks}
+                        onEdit={handleEditTask}
+                        onDelete={handleDeleteTask}
+                      />
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {completedTasks.map((task) => (
+                          <TaskCard
+                            key={task.id}
+                            task={task}
+                            onEdit={() => handleEditTask(task)}
+                            onDelete={() => handleDeleteTask(task.id)}
+                          />
+                        ))}
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
             </div>
           )}
         </main>
@@ -456,6 +530,11 @@ export default function App() {
         task={editingTask}
         projects={projects}
         defaultProjectId={selectedProjectId}
+      />
+
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        onClose={() => setIsChangePasswordModalOpen(false)}
       />
     </div>
   );

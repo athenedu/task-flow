@@ -1,6 +1,6 @@
 import type { Task, AppUser } from '@/types';
 import { cn, formatDateShort, isDateOverdue } from '@/lib/utils';
-import { Calendar, MoreVertical, Edit, Trash2, UserCircle } from 'lucide-react';
+import { Calendar, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { PriorityBadge } from './PriorityBadge';
 import { StatusBadge } from './StatusBadge';
 import { UserAvatar } from './UserAvatar';

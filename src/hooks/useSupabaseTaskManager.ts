@@ -64,7 +64,7 @@ export function useSupabaseTaskManager() {
     try {
       // Tentar usar uma função RPC customizada se existir
       const { data: rpcData, error: rpcError } = await supabase
-        .rpc('get_all_users');
+        .rpc('get_all_users') as { data: any[] | null, error: any };
 
       if (rpcData && !rpcError) {
         setUsers(rpcData.map((u: any) => ({

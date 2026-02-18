@@ -49,7 +49,9 @@ export function useTaskManager() {
       dueDate: '2025-02-25',
       status: 'concluída',
       projectId: '1',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      createdBy: '',
+      assignedTo: null
     },
     {
       id: '2',
@@ -59,7 +61,9 @@ export function useTaskManager() {
       dueDate: '2025-02-28',
       status: 'iniciada',
       projectId: '1',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      createdBy: '',
+      assignedTo: null
     },
     {
       id: '3',
@@ -69,7 +73,9 @@ export function useTaskManager() {
       dueDate: '2025-03-05',
       status: 'na fila',
       projectId: '2',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      createdBy: '',
+      assignedTo: null
     }
   ]);
 

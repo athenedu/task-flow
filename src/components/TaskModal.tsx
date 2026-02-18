@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Task, Priority, Status, Project, AppUser } from '@/types';
 import { formatDateForInput } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,25 +44,36 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, users, de
   const [assignedTo, setAssignedTo] = useState<string>('unassigned');
   const [errors, setErrors] = useState<{ title?: string; projectId?: string }>({});
 
+  // Rastrear estado anterior do modal para evitar resets desnecessários
+  const prevIsOpenRef = useRef(isOpen);
+
   useEffect(() => {
-    if (task) {
-      setTitle(task.title);
-      setDescription(task.description);
-      setPriority(task.priority);
-      setStatus(task.status);
-      setDueDate(formatDateForInput(task.dueDate));
-      setProjectId(task.projectId);
-      setAssignedTo(task.assignedTo || 'unassigned');
-    } else {
-      setTitle('');
-      setDescription('');
-      setPriority('média');
-      setStatus('na fila');
-      setDueDate(formatDateForInput());
-      setProjectId(defaultProjectId || projects[0]?.id || '');
-      setAssignedTo('unassigned');
+    // Apenas resetar quando o modal abre pela primeira vez (transição de false para true)
+    const isOpening = isOpen && !prevIsOpenRef.current;
+
+    if (isOpening) {
+      if (task) {
+        setTitle(task.title);
+        setDescription(task.description);
+        setPriority(task.priority);
+        setStatus(task.status);
+        setDueDate(formatDateForInput(task.dueDate));
+        setProjectId(task.projectId);
+        setAssignedTo(task.assignedTo || 'unassigned');
+      } else {
+        setTitle('');
+        setDescription('');
+        setPriority('média');
+        setStatus('na fila');
+        setDueDate(formatDateForInput());
+        setProjectId(defaultProjectId || projects[0]?.id || '');
+        setAssignedTo('unassigned');
+      }
+      setErrors({});
     }
-    setErrors({});
+
+    // Atualizar a referência do estado anterior
+    prevIsOpenRef.current = isOpen;
   }, [task, isOpen, defaultProjectId, projects]);
 
   const handleSubmit = (e: React.FormEvent) => {

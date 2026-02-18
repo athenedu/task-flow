@@ -1,5 +1,5 @@
 import type { Task } from '@/types';
-import { cn } from '@/lib/utils';
+import { cn, formatDateLong, isDateOverdue } from '@/lib/utils';
 import { Calendar, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { PriorityBadge } from './PriorityBadge';
 import { StatusBadge } from './StatusBadge';
@@ -25,17 +25,8 @@ interface TaskTableProps {
 }
 
 export function TaskTable({ tasks, onEdit, onDelete }: TaskTableProps) {
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
-  const isOverdue = (dueDate: string, status: string) => {
-    return new Date(dueDate) < new Date() && status !== 'concluída';
+  const checkOverdue = (dueDate: string, status: string) => {
+    return isDateOverdue(dueDate) && status !== 'concluída';
   };
 
   return (
@@ -77,16 +68,16 @@ export function TaskTable({ tasks, onEdit, onDelete }: TaskTableProps) {
                 <div className="flex items-center gap-2">
                   <Calendar className={cn(
                     'w-3.5 h-3.5',
-                    isOverdue(task.dueDate, task.status) ? 'text-red-500' : 'text-gray-400'
+                    checkOverdue(task.dueDate, task.status) ? 'text-red-500' : 'text-gray-400'
                   )} />
                   <span className={cn(
                     'text-sm whitespace-nowrap',
-                    isOverdue(task.dueDate, task.status)
+                    checkOverdue(task.dueDate, task.status)
                       ? 'text-red-600 font-medium'
                       : 'text-gray-700'
                   )}>
-                    {formatDate(task.dueDate)}
-                    {isOverdue(task.dueDate, task.status) && (
+                    {formatDateLong(task.dueDate)}
+                    {checkOverdue(task.dueDate, task.status) && (
                       <span className="block text-xs text-red-500">Atrasada</span>
                     )}
                   </span>

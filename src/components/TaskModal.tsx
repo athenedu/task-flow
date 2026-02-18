@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Task, Priority, Status, Project } from '@/types';
+import { formatDateForInput } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -45,14 +46,14 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, defaultPr
       setDescription(task.description);
       setPriority(task.priority);
       setStatus(task.status);
-      setDueDate(task.dueDate);
+      setDueDate(formatDateForInput(task.dueDate));
       setProjectId(task.projectId);
     } else {
       setTitle('');
       setDescription('');
       setPriority('média');
       setStatus('na fila');
-      setDueDate(new Date().toISOString().split('T')[0]);
+      setDueDate(formatDateForInput());
       setProjectId(defaultProjectId || projects[0]?.id || '');
     }
     setErrors({});
@@ -60,22 +61,22 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, defaultPr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const newErrors: { title?: string; projectId?: string } = {};
-    
+
     if (!title.trim()) {
       newErrors.title = 'Título é obrigatório';
     }
-    
+
     if (!projectId) {
       newErrors.projectId = 'Projeto é obrigatório';
     }
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    
+
     onSubmit({
       title: title.trim(),
       description: description.trim(),
@@ -84,7 +85,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, defaultPr
       dueDate,
       projectId
     });
-    
+
     onClose();
   };
 
@@ -94,7 +95,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, defaultPr
         <DialogHeader>
           <DialogTitle>{task ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
             <Label htmlFor="title">
@@ -111,7 +112,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, defaultPr
               <p className="text-xs text-red-500">{errors.title}</p>
             )}
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="description">Descrição</Label>
             <Textarea
@@ -122,7 +123,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, defaultPr
               rows={3}
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="project">Projeto <span className="text-red-500">*</span></Label>
@@ -142,7 +143,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, defaultPr
                 <p className="text-xs text-red-500">{errors.projectId}</p>
               )}
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="dueDate">Data de Previsão <span className="text-red-500">*</span></Label>
               <Input
@@ -154,7 +155,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, defaultPr
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="priority">Prioridade</Label>
@@ -171,7 +172,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, defaultPr
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
@@ -188,7 +189,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, defaultPr
               </Select>
             </div>
           </div>
-          
+
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar

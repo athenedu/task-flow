@@ -1,5 +1,5 @@
 import type { Task } from '@/types';
-import { cn } from '@/lib/utils';
+import { cn, formatDateShort, isDateOverdue } from '@/lib/utils';
 import { Calendar, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { PriorityBadge } from './PriorityBadge';
 import { StatusBadge } from './StatusBadge';
@@ -17,12 +17,7 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
-  const isOverdue = new Date(task.dueDate) < new Date() && task.status !== 'concluída';
-  
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-  };
+  const isOverdue = isDateOverdue(task.dueDate) && task.status !== 'concluída';
 
   return (
     <div className="group bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg hover:border-[#3881ec]/30 transition-all duration-300">
@@ -32,15 +27,15 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
             <PriorityBadge priority={task.priority} />
             <StatusBadge status={task.status} />
           </div>
-          
+
           <h4 className="font-semibold text-gray-900 mb-1 group-hover:text-[#3881ec] transition-colors">
             {task.title}
           </h4>
-          
+
           {task.description && (
             <p className="text-sm text-gray-500 line-clamp-2 mb-3">{task.description}</p>
           )}
-          
+
           <div className="flex items-center gap-2">
             <Calendar className={cn(
               'w-3.5 h-3.5',
@@ -50,12 +45,12 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
               'text-xs',
               isOverdue ? 'text-red-600 font-medium' : 'text-gray-500'
             )}>
-              {formatDate(task.dueDate)}
+              {formatDateShort(task.dueDate)}
               {isOverdue && ' (atrasada)'}
             </span>
           </div>
         </div>
-        
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="p-1.5 rounded-lg hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">

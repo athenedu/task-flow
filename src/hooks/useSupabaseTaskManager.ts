@@ -121,7 +121,7 @@ export function useSupabaseTaskManager() {
         createdAt: projectData.created_at
       };
 
-      setProjects(prev => [newProject, ...prev]);
+      setProjects((prev: Project[]) => [newProject, ...prev]);
       return projectData.id;
     }
   }, [user]);
@@ -129,13 +129,15 @@ export function useSupabaseTaskManager() {
   const updateProject = useCallback(async (id: string, updates: Partial<Project>) => {
     if (!user) return;
 
-    const { error: updateError } = await supabase
-      .from('projects')
-      .update({
-        name: updates.name,
-        description: updates.description,
-        color: updates.color
-      } as any)
+    const updateData: Record<string, any> = {
+      name: updates.name,
+      description: updates.description,
+      color: updates.color
+    };
+
+    const { error: updateError } = await (supabase
+      .from('projects') as any)
+      .update(updateData)
       .eq('id', id);
 
     if (updateError) {
@@ -143,7 +145,7 @@ export function useSupabaseTaskManager() {
       return;
     }
 
-    setProjects(prev => prev.map(p =>
+    setProjects((prev: Project[]) => prev.map((p: Project) =>
       p.id === id ? { ...p, ...updates } : p
     ));
   }, [user]);
@@ -161,8 +163,8 @@ export function useSupabaseTaskManager() {
       return;
     }
 
-    setProjects(prev => prev.filter(p => p.id !== id));
-    setTasks(prev => prev.filter(t => t.projectId !== id));
+    setProjects((prev: Project[]) => prev.filter((p: Project) => p.id !== id));
+    setTasks((prev: Task[]) => prev.filter((t: Task) => t.projectId !== id));
 
     if (selectedProjectId === id) {
       setSelectedProjectId(null);
@@ -212,16 +214,18 @@ export function useSupabaseTaskManager() {
   const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
     if (!user) return;
 
-    const { error: updateError } = await supabase
-      .from('tasks')
-      .update({
-        title: updates.title,
-        description: updates.description,
-        priority: updates.priority,
-        due_date: updates.dueDate,
-        status: updates.status,
-        project_id: updates.projectId
-      } as any)
+    const updateData: Record<string, any> = {
+      title: updates.title,
+      description: updates.description,
+      priority: updates.priority,
+      due_date: updates.dueDate,
+      status: updates.status,
+      project_id: updates.projectId
+    };
+
+    const { error: updateError } = await (supabase
+      .from('tasks') as any)
+      .update(updateData)
       .eq('id', id);
 
     if (updateError) {
@@ -247,7 +251,7 @@ export function useSupabaseTaskManager() {
       return;
     }
 
-    setTasks(prev => prev.filter(t => t.id !== id));
+    setTasks((prev: Task[]) => prev.filter((t: Task) => t.id !== id));
   }, [user]);
 
   // Filtered and sorted tasks

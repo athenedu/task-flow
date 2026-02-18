@@ -11,6 +11,9 @@ Sistema de gerenciamento de tarefas e projetos colaborativo, desenvolvido com Re
 - ✅ **Autenticação**: Sistema seguro com Supabase Auth
 - ✅ **Colaborativo**: Todos os usuários autenticados compartilham os mesmos dados
 - ✅ **Gerenciamento de Senha**: Usuários podem alterar suas próprias senhas
+- ✅ **Perfis de Usuário**: Nome personalizado e avatar com Gravatar
+- ✅ **Rastreamento**: Visualize quem criou e quem é responsável por cada tarefa
+- ✅ **Atribuição de Tarefas**: Atribua responsáveis ao criar ou editar tarefas
 
 ## 🛠️ Tecnologias
 
@@ -60,13 +63,19 @@ Acesse: [http://localhost:5173](http://localhost:5173)
 2. Crie um novo projeto
 3. Anote a senha do banco de dados
 
-### 2. Executar SQL
+### 2. Executar Script de Setup
 
-No **SQL Editor** do Supabase, execute o script completo disponível em `PLANO_DEPLOY.md` que cria:
-- Tabela `projects`
-- Tabela `tasks`
-- Índices de performance
-- Políticas RLS (Row Level Security)
+No **SQL Editor** do Supabase, execute o script completo `database_setup.sql` que configura:
+
+- ✅ Tabelas `projects`, `tasks` e `user_profiles`
+- ✅ Campos de rastreamento de usuários (criador e responsável)
+- ✅ Perfis personalizados com nome e avatar
+- ✅ Políticas RLS (Row Level Security)
+- ✅ Trigger para criar perfis automaticamente
+- ✅ Função RPC para listar usuários
+- ✅ Índices de performance
+
+**Arquivo**: [`database_setup.sql`](database_setup.sql)
 
 ### 3. Obter Credenciais
 
@@ -124,6 +133,14 @@ Os usuários devem:
 1. Fazer login com credenciais fornecidas
 2. Clicar no avatar → **"Alterar Senha"**
 3. Inserir senha temporária e definir nova senha
+
+### Personalizando Perfil
+
+Após o login, os usuários podem:
+1. Clicar no avatar → **"Editar Perfil"**
+2. Definir um nome de exibição personalizado
+3. Configurar avatar via [Gravatar](https://gravatar.com) (usando o email cadastrado)
+4. Opcionalmente adicionar URL customizada de avatar
 
 ## 🔒 Segurança
 

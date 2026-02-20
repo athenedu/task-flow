@@ -14,6 +14,7 @@ Sistema de gerenciamento de tarefas e projetos colaborativo, desenvolvido com Re
 - ✅ **Perfis de Usuário**: Nome personalizado e avatar com Gravatar
 - ✅ **Rastreamento**: Visualize quem criou e quem é responsável por cada tarefa
 - ✅ **Atribuição de Tarefas**: Atribua responsáveis ao criar ou editar tarefas
+- ✅ **Histórico de Status**: Registre e visualize todas as mudanças de status com comentários opcionais (máx 140 caracteres)
 
 ## 🛠️ Tecnologias
 
@@ -67,15 +68,18 @@ Acesse: [http://localhost:5173](http://localhost:5173)
 
 No **SQL Editor** do Supabase, execute o script completo `database_setup.sql` que configura:
 
-- ✅ Tabelas `projects`, `tasks` e `user_profiles`
+- ✅ Tabelas `projects`, `tasks`, `user_profiles` e `task_status_history`
 - ✅ Campos de rastreamento de usuários (criador e responsável)
 - ✅ Perfis personalizados com nome e avatar
+- ✅ Sistema de histórico de mudanças de status
 - ✅ Políticas RLS (Row Level Security)
 - ✅ Trigger para criar perfis automaticamente
 - ✅ Função RPC para listar usuários
 - ✅ Índices de performance
 
 **Arquivo**: [`database_setup.sql`](database_setup.sql)
+
+> **Nota**: O script agora é unificado e inclui todas as funcionalidades, incluindo histórico de status.
 
 ### 3. Obter Credenciais
 
@@ -174,6 +178,21 @@ npm run build       # Build para produção
 npm run preview     # Preview do build
 npm run lint        # Verifica código com ESLint
 ```
+
+## 📌 Histórico de Versões
+
+### v0.0.1 (20/02/2026)
+**Nova Funcionalidade:**
+- 🎉 **Histórico de Status**: Sistema completo de rastreamento de mudanças de status
+  - Modal de comentário ao alterar status (até 140 caracteres)
+  - Visualização cronológica de todas as alterações
+  - Exibição de avatar, data, comentário e status alvo
+  - Ícone de acesso direto ao histórico em cards e tabelas
+  - Integrado ao script unificado de setup do banco
+
+**Melhorias:**
+- Script `database_setup.sql` agora unificado com todas as funcionalidades
+- Documentação atualizada no README
 
 ## 🤝 Contribuindo
 

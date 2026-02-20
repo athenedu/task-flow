@@ -128,6 +128,46 @@ GRANT EXECUTE ON FUNCTION get_all_users() TO authenticated;
 -- Comentário para documentação
 COMMENT ON FUNCTION get_all_users() IS 'Retorna lista de todos os usuários do sistema com seus perfis para seleção de responsáveis';
 
+
+-- ----------------------------------------------------------------------------
+-- TABELA DE HISTÓRICO DE STATUS
+-- ----------------------------------------------------------------------------
+
+-- Criar tabela de histórico de mudanças de status
+CREATE TABLE IF NOT EXISTS task_status_history (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  task_id UUID REFERENCES tasks(id) ON DELETE CASCADE NOT NULL,
+  changed_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  previous_status TEXT,
+  new_status TEXT NOT NULL,
+  comment TEXT CHECK (length(comment) <= 140),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Habilitar Row Level Security
+ALTER TABLE task_status_history ENABLE ROW LEVEL SECURITY;
+
+-- Políticas RLS para task_status_history
+CREATE POLICY "Histórico é público para leitura" ON task_status_history
+  FOR SELECT USING (true);
+
+CREATE POLICY "Usuários autenticados podem inserir histórico" ON task_status_history
+  FOR INSERT WITH CHECK (auth.uid() = changed_by);
+
+-- Índices para melhor performance
+CREATE INDEX IF NOT EXISTS idx_task_status_history_task_id ON task_status_history(task_id);
+CREATE INDEX IF NOT EXISTS idx_task_status_history_created_at ON task_status_history(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_task_status_history_changed_by ON task_status_history(changed_by);
+
+-- Comentários para documentação
+COMMENT ON TABLE task_status_history IS 'Histórico de mudanças de status das tarefas';
+COMMENT ON COLUMN task_status_history.task_id IS 'Tarefa que teve o status alterado';
+COMMENT ON COLUMN task_status_history.changed_by IS 'Usuário que alterou o status';
+COMMENT ON COLUMN task_status_history.previous_status IS 'Status anterior da tarefa';
+COMMENT ON COLUMN task_status_history.new_status IS 'Novo status da tarefa';
+COMMENT ON COLUMN task_status_history.comment IS 'Comentário opcional sobre a mudança (máx 140 caracteres)';
+COMMENT ON COLUMN task_status_history.created_at IS 'Data e hora da mudança';
+
 -- ============================================================================
 -- FIM DO SETUP
 -- ============================================================================

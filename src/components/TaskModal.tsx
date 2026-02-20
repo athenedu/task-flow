@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { Task, Priority, Status, Project, AppUser } from '@/types';
 import { formatDateForInput } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { StatusChangeCommentModal } from './StatusChangeCommentModal';
 import {
   Dialog,
   DialogContent,
@@ -28,12 +29,13 @@ interface TaskModalProps {
   projects: Project[];
   users: AppUser[];
   defaultProjectId?: string | null;
+  onStatusChange?: (taskId: string, previousStatus: Status | null, newStatus: Status, comment: string | null) => void;
 }
 
 const priorities: Priority[] = ['urgente', 'alta', 'média', 'baixa'];
 const statuses: Status[] = ['na fila', 'em preparação', 'iniciada', 'em revisão', 'concluída'];
 
-export function TaskModal({ isOpen, onClose, onSubmit, task, projects, users, defaultProjectId }: TaskModalProps) {
+export function TaskModal({ isOpen, onClose, onSubmit, task, projects, users, defaultProjectId, onStatusChange }: TaskModalProps) {
   const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -43,6 +45,11 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, users, de
   const [projectId, setProjectId] = useState('');
   const [assignedTo, setAssignedTo] = useState<string>('unassigned');
   const [errors, setErrors] = useState<{ title?: string; projectId?: string }>({});
+
+  // Estado para controlar o modal de comentário de mudança de status
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+  const [pendingSubmitData, setPendingSubmitData] = useState<Omit<Task, 'id' | 'createdAt'> | null>(null);
+  const [originalStatus, setOriginalStatus] = useState<Status | null>(null);
 
   // Rastrear estado anterior do modal para evitar resets desnecessários
   const prevIsOpenRef = useRef(isOpen);
@@ -57,6 +64,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, users, de
         setDescription(task.description);
         setPriority(task.priority);
         setStatus(task.status);
+        setOriginalStatus(task.status); // Salvar o status original
         setDueDate(formatDateForInput(task.dueDate));
         setProjectId(task.projectId);
         setAssignedTo(task.assignedTo || 'unassigned');
@@ -65,6 +73,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, users, de
         setDescription('');
         setPriority('média');
         setStatus('na fila');
+        setOriginalStatus(null); // Nova tarefa não tem status anterior
         setDueDate(formatDateForInput());
         setProjectId(defaultProjectId || projects[0]?.id || '');
         setAssignedTo('unassigned');
@@ -94,7 +103,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, users, de
       return;
     }
 
-    onSubmit({
+    const taskData: Omit<Task, 'id' | 'createdAt'> = {
       title: title.trim(),
       description: description.trim(),
       priority,
@@ -103,139 +112,178 @@ export function TaskModal({ isOpen, onClose, onSubmit, task, projects, users, de
       projectId,
       createdBy: task?.createdBy || user?.id || '',
       assignedTo: assignedTo === 'unassigned' ? null : assignedTo
-    });
+    };
 
-    onClose();
+    // Verificar se o status foi alterado (apenas em edição de tarefa existente)
+    const statusChanged = task && originalStatus !== status;
+
+    if (statusChanged && onStatusChange) {
+      // Status foi alterado, abrir modal de comentário
+      setPendingSubmitData(taskData);
+      setIsCommentModalOpen(true);
+    } else {
+      // Status não mudou ou é nova tarefa, submeter diretamente
+      onSubmit(taskData);
+      onClose();
+    }
+  };
+
+  const handleCommentConfirm = (comment: string) => {
+    setIsCommentModalOpen(false);
+
+    if (pendingSubmitData && task && onStatusChange) {
+      // Salvar histórico de mudança de status
+      onStatusChange(task.id, originalStatus, status, comment || null);
+
+      // Submeter a tarefa
+      onSubmit(pendingSubmitData);
+      setPendingSubmitData(null);
+      onClose();
+    }
+  };
+
+  const handleCommentModalClose = () => {
+    setIsCommentModalOpen(false);
+    setPendingSubmitData(null);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{task ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{task ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">
-              Título <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Digite o título da tarefa"
-              className={errors.title ? 'border-red-500' : ''}
-            />
-            {errors.title && (
-              <p className="text-xs text-red-500">{errors.title}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Digite uma descrição opcional"
-              rows={3}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label htmlFor="project">Projeto <span className="text-red-500">*</span></Label>
-              <Select value={projectId} onValueChange={setProjectId}>
-                <SelectTrigger className={errors.projectId ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Selecione um projeto" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.projectId && (
-                <p className="text-xs text-red-500">{errors.projectId}</p>
+              <Label htmlFor="title">
+                Título <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Digite o título da tarefa"
+                className={errors.title ? 'border-red-500' : ''}
+              />
+              {errors.title && (
+                <p className="text-xs text-red-500">{errors.title}</p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dueDate">Data de Previsão <span className="text-red-500">*</span></Label>
-              <Input
-                id="dueDate"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                required
+              <Label htmlFor="description">Descrição</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Digite uma descrição opcional"
+                rows={3}
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="project">Projeto <span className="text-red-500">*</span></Label>
+                <Select value={projectId} onValueChange={setProjectId}>
+                  <SelectTrigger className={errors.projectId ? 'border-red-500' : ''}>
+                    <SelectValue placeholder="Selecione um projeto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.projectId && (
+                  <p className="text-xs text-red-500">{errors.projectId}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dueDate">Data de Previsão <span className="text-red-500">*</span></Label>
+                <Input
+                  id="dueDate"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="priority">Prioridade</Label>
+                <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {priorities.map((p) => (
+                      <SelectItem key={p} value={p}>
+                        {p.charAt(0).toUpperCase() + p.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statuses.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="priority">Prioridade</Label>
-              <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
+              <Label htmlFor="assignedTo">Responsável</Label>
+              <Select value={assignedTo} onValueChange={setAssignedTo}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione um responsável (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {priorities.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {p.charAt(0).toUpperCase() + p.slice(1)}
+                  <SelectItem value="unassigned">Sem responsável</SelectItem>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name || u.email}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {statuses.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s.charAt(0).toUpperCase() + s.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancelar
+              </Button>
+              <Button type="submit" className="bg-[#3881ec] hover:bg-[#1a5ec8]">
+                {task ? 'Salvar' : 'Criar Tarefa'}
+              </Button>
             </div>
-          </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-          <div className="space-y-2">
-            <Label htmlFor="assignedTo">Responsável</Label>
-            <Select value={assignedTo} onValueChange={setAssignedTo}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um responsável (opcional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">Sem responsável</SelectItem>
-                {users.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.name || u.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" className="bg-[#3881ec] hover:bg-[#1a5ec8]">
-              {task ? 'Salvar' : 'Criar Tarefa'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <StatusChangeCommentModal
+        isOpen={isCommentModalOpen}
+        onClose={handleCommentModalClose}
+        onConfirm={handleCommentConfirm}
+        newStatus={status}
+      />
+    </>
   );
 }

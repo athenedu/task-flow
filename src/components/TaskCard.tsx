@@ -1,6 +1,6 @@
 import type { Task, AppUser } from '@/types';
 import { cn, formatDateShort, isDateOverdue } from '@/lib/utils';
-import { Calendar, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Calendar, MoreVertical, Edit, Trash2, History } from 'lucide-react';
 import { PriorityBadge } from './PriorityBadge';
 import { StatusBadge } from './StatusBadge';
 import { UserAvatar } from './UserAvatar';
@@ -16,9 +16,10 @@ interface TaskCardProps {
   users: AppUser[];
   onEdit: () => void;
   onDelete: () => void;
+  onViewHistory: () => void;
 }
 
-export function TaskCard({ task, users, onEdit, onDelete }: TaskCardProps) {
+export function TaskCard({ task, users, onEdit, onDelete, onViewHistory }: TaskCardProps) {
   const isOverdue = isDateOverdue(task.dueDate) && task.status !== 'concluída';
   const assignedUser = users.find(u => u.id === task.assignedTo);
   const createdByUser = users.find(u => u.id === task.createdBy);
@@ -28,6 +29,13 @@ export function TaskCard({ task, users, onEdit, onDelete }: TaskCardProps) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-2">
+            <button
+              onClick={onViewHistory}
+              className="p-1 rounded-md hover:bg-gray-100 transition-colors group/history"
+              title="Ver histórico de alterações"
+            >
+              <History className="w-4 h-4 text-gray-400 group-hover/history:text-[#3881ec]" />
+            </button>
             <PriorityBadge priority={task.priority} />
             <StatusBadge status={task.status} />
           </div>
@@ -100,6 +108,10 @@ export function TaskCard({ task, users, onEdit, onDelete }: TaskCardProps) {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuItem onClick={onViewHistory}>
+              <History className="w-4 h-4 mr-2" />
+              Histórico
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={onEdit}>
               <Edit className="w-4 h-4 mr-2" />
               Editar

@@ -13,6 +13,7 @@ import { TaskCard } from '@/components/TaskCard';
 import { TaskTable } from '@/components/TaskTable';
 import { ProjectModal } from '@/components/ProjectModal';
 import { TaskModal } from '@/components/TaskModal';
+import { TaskHistoryModal } from '@/components/TaskHistoryModal';
 import { StatsPanel } from '@/components/StatsPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,7 +53,9 @@ export default function App() {
     deleteProject,
     addTask,
     updateTask,
-    deleteTask
+    deleteTask,
+    addStatusHistory,
+    loadTaskHistory
   } = useSupabaseTaskManager();
 
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
@@ -64,6 +67,8 @@ export default function App() {
   const [showCompleted, setShowCompleted] = useState(true);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [historyTask, setHistoryTask] = useState<Task | null>(null);
 
   const handleAddProject = () => {
     setEditingProject(null);
@@ -111,6 +116,15 @@ export default function App() {
     if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
       deleteTask(taskId);
     }
+  };
+
+  const handleViewHistory = (task: Task) => {
+    setHistoryTask(task);
+    setIsHistoryModalOpen(true);
+  };
+
+  const handleStatusChange = (taskId: string, previousStatus: any, newStatus: any, comment: string | null) => {
+    addStatusHistory(taskId, previousStatus, newStatus, comment);
   };
 
   const clearFilters = () => {
@@ -460,6 +474,7 @@ export default function App() {
                       users={users}
                       onEdit={handleEditTask}
                       onDelete={handleDeleteTask}
+                      onViewHistory={handleViewHistory}
                     />
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -470,6 +485,7 @@ export default function App() {
                           users={users}
                           onEdit={() => handleEditTask(task)}
                           onDelete={() => handleDeleteTask(task.id)}
+                          onViewHistory={() => handleViewHistory(task)}
                         />
                       ))}
                     </div>
@@ -504,6 +520,7 @@ export default function App() {
                         users={users}
                         onEdit={handleEditTask}
                         onDelete={handleDeleteTask}
+                        onViewHistory={handleViewHistory}
                       />
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -514,6 +531,7 @@ export default function App() {
                             users={users}
                             onEdit={() => handleEditTask(task)}
                             onDelete={() => handleDeleteTask(task.id)}
+                            onViewHistory={() => handleViewHistory(task)}
                           />
                         ))}
                       </div>
@@ -542,6 +560,16 @@ export default function App() {
         projects={projects}
         users={users}
         defaultProjectId={selectedProjectId}
+        onStatusChange={handleStatusChange}
+      />
+
+      <TaskHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        taskId={historyTask?.id || ''}
+        taskTitle={historyTask?.title || ''}
+        users={users}
+        loadHistory={loadTaskHistory}
       />
 
       <ChangePasswordModal

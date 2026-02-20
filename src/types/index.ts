@@ -21,6 +21,16 @@ export interface Task {
   assignedTo: string | null;
 }
 
+export interface TaskStatusHistory {
+  id: string;
+  taskId: string;
+  changedBy: string;
+  previousStatus: Status | null;
+  newStatus: Status;
+  comment: string | null;
+  createdAt: string;
+}
+
 export interface Project {
   id: string;
   name: string;

@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Project, Task, Priority, Status, Filters, SortOption, AppUser } from '@/types';
+import type { Project, Task, Priority, Status, Filters, SortOption, AppUser, TaskStatusHistory } from '@/types';
 
 const priorityOrder: Record<Priority, number> = {
   'urgente': 0,
@@ -336,6 +336,59 @@ export function useSupabaseTaskManager() {
     setTasks((prev: Task[]) => prev.filter((t: Task) => t.id !== id));
   }, [user]);
 
+  // Task Status History operations
+  const addStatusHistory = useCallback(async (
+    taskId: string,
+    previousStatus: Status | null,
+    newStatus: Status,
+    comment: string | null
+  ) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('task_status_history')
+      .insert({
+        task_id: taskId,
+        changed_by: user.id,
+        previous_status: previousStatus,
+        new_status: newStatus,
+        comment: comment || null
+      } as any);
+
+    if (error) {
+      console.error('Erro ao salvar histórico de status:', error);
+    }
+  }, [user]);
+
+  const loadTaskHistory = useCallback(async (taskId: string) => {
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('task_status_history')
+      .select('*')
+      .eq('task_id', taskId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao carregar histórico:', error);
+      return [];
+    }
+
+    if (data) {
+      return (data as any[]).map((h: any) => ({
+        id: h.id,
+        taskId: h.task_id,
+        changedBy: h.changed_by,
+        previousStatus: h.previous_status,
+        newStatus: h.new_status,
+        comment: h.comment,
+        createdAt: h.created_at
+      }));
+    }
+
+    return [];
+  }, [user]);
+
   // Filtered and sorted tasks
   const filteredTasks = useMemo(() => {
     let result = tasks;
@@ -428,6 +481,8 @@ export function useSupabaseTaskManager() {
     deleteProject,
     addTask,
     updateTask,
-    deleteTask
+    deleteTask,
+    addStatusHistory,
+    loadTaskHistory
   };
 }

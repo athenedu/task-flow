@@ -46,6 +46,20 @@ export function formatDateLong(dateString: string): string {
 }
 
 /**
+ * Formata uma data/hora completa em português (ex: "18 fev 2026, 14:30")
+ */
+export function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+/**
  * Verifica se uma data está atrasada (passada em relação à data atual)
  */
 export function isDateOverdue(dateString: string): boolean {

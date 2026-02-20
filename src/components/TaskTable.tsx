@@ -1,6 +1,6 @@
 import type { Task, AppUser } from '@/types';
 import { cn, formatDateLong, isDateOverdue } from '@/lib/utils';
-import { Calendar, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Calendar, MoreVertical, Edit, Trash2, History } from 'lucide-react';
 import { PriorityBadge } from './PriorityBadge';
 import { StatusBadge } from './StatusBadge';
 import { UserAvatar } from './UserAvatar';
@@ -24,9 +24,10 @@ interface TaskTableProps {
   users: AppUser[];
   onEdit: (task: Task) => void;
   onDelete: (taskId: string) => void;
+  onViewHistory: (task: Task) => void;
 }
 
-export function TaskTable({ tasks, users, onEdit, onDelete }: TaskTableProps) {
+export function TaskTable({ tasks, users, onEdit, onDelete, onViewHistory }: TaskTableProps) {
   const checkOverdue = (dueDate: string, status: string) => {
     return isDateOverdue(dueDate) && status !== 'concluída';
   };
@@ -55,8 +56,17 @@ export function TaskTable({ tasks, users, onEdit, onDelete }: TaskTableProps) {
           {tasks.map((task) => (
             <TableRow key={task.id} className="hover:bg-gray-50">
               <TableCell className="font-medium">
-                <div className="max-w-[250px]">
-                  <span className="line-clamp-2">{task.title}</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => onViewHistory(task)}
+                    className="p-1 rounded-md hover:bg-gray-100 transition-colors group/history flex-shrink-0"
+                    title="Ver histórico de alterações"
+                  >
+                    <History className="w-4 h-4 text-gray-400 group-hover/history:text-[#3881ec]" />
+                  </button>
+                  <div className="max-w-[250px]">
+                    <span className="line-clamp-2">{task.title}</span>
+                  </div>
                 </div>
               </TableCell>
               <TableCell>
@@ -127,6 +137,10 @@ export function TaskTable({ tasks, users, onEdit, onDelete }: TaskTableProps) {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-40">
+                    <DropdownMenuItem onClick={() => onViewHistory(task)}>
+                      <History className="w-4 h-4 mr-2" />
+                      Histórico
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onEdit(task)}>
                       <Edit className="w-4 h-4 mr-2" />
                       Editar

@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Project, Task, Priority, Status, Filters, SortOption, AppUser, TaskStatusHistory } from '@/types';
+import type { Project, Task, Priority, Status, Filters, SortOption, AppUser } from '@/types';
 
 const priorityOrder: Record<Priority, number> = {
   'urgente': 0,
